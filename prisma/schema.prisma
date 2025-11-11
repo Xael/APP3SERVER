@@ -1,0 +1,146 @@
+// ./prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// MODELO DE UNIDADE DE MEDIDA
+// ============================================================
+model Unit {
+  id       Int       @id @default(autoincrement())
+  name     String
+  symbol   String
+  services Service[]
+}
+
+// ============================================================
+// MODELO DE SERVIÇO
+// ============================================================
+model Service {
+  id        Int               @id @default(autoincrement())
+  name      String            @unique
+  unitId    Int
+  unit      Unit              @relation(fields: [unitId], references: [id], onDelete: Restrict) // Evita excluir unidade em uso
+  locations LocationService[]
+  goals     Goal[]
+}
+
+// ============================================================
+// MODELO DE LOCAL (COM HIERARQUIA)
+// ============================================================
+model Location {
+  id           Int       @id @default(autoincrement())
+  city         String
+  name         String
+  lat          Float?
+  lng          Float?
+  observations String?
+  isGroup      Boolean?  @default(false) // Distingue se é um agrupador (Bairro)
+
+  // Relacionamento Pai-Filho (Bairro -> Rua)
+  parentId Int?
+  parent   Location?   @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children Location[]  @relation("LocationHierarchy")
+
+  records  Record[]
+  services LocationService[]
+}
+
+// ============================================================
+// MODELO DE RELACIONAMENTO Local <-> Serviço (Tabela de Junção)
+// ============================================================
+model LocationService {
+  locationId  Int
+  serviceId   Int
+  measurement Float
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([locationId, serviceId])
+}
+
+// ============================================================
+// MODELO DE UTILIZADOR
+// ============================================================
+model User {
+  id                Int        @id @default(autoincrement())
+  email             String     @unique
+  name              String
+  password          String
+  role              String     // ADMIN, OPERATOR, FISCAL
+  assignments       Json?
+  records           Record[]
+  resetToken        String?
+  resetTokenExpires DateTime?
+  auditLogs         AuditLog[]
+}
+
+// ============================================================
+// MODELO DE REGISTO DE SERVIÇO (COM ORDEM DE SERVIÇO)
+// ============================================================
+model Record {
+  id                  Int       @id @default(autoincrement())
+  operatorId          Int?      // Alterado para opcional para não perder histórico
+  serviceId           Int
+  serviceType         String
+  serviceUnit         String
+  locationId          Int?      // Alterado para opcional para não perder histórico
+  locationName        String
+  contractGroup       String
+  locationArea        Float?
+  overrideMeasurement Float?    // Medição ajustada pelo Admin
+  gpsUsed             Boolean
+  startTime           DateTime
+  endTime             DateTime?
+  beforePhotos        String[]
+  afterPhotos         String[]
+  operatorName        String
+  serviceOrderNumber  String?   // Novo campo para Ordem de Serviço
+
+  // onDelete: SetNull preserva o histórico se um operador ou local for excluído
+  operator User?     @relation(fields: [operatorId], references: [id], onDelete: SetNull)
+  location Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+}
+
+// ===========================================================
+// MODELO DE METAS
+// ===========================================================
+model Goal {
+  id            Int     @id @default(autoincrement())
+  contractGroup String
+  month         String
+  targetArea    Float
+  serviceId     Int
+  service       Service @relation(fields: [serviceId], references: [id], onDelete: Cascade) // Se o serviço for deletado, a meta também é
+}
+
+// ============================================================
+// CONFIGURAÇÕES DE CONTRATO
+// ============================================================
+model ContractConfig {
+  id            Int    @id @default(autoincrement())
+  contractGroup String @unique
+  cycleStartDay Int
+}
+
+// ============================================================
+// LOGS DE AUDITORIA
+// ============================================================
+model AuditLog {
+  id            Int      @id @default(autoincrement())
+  timestamp     DateTime @default(now())
+  adminId       Int
+  adminUsername String
+  action        String
+  recordId      Int?     // Alterado para opcional
+  details       String
+
+  admin User @relation(fields: [adminId], references: [id], onDelete: Restrict) // Evita excluir admin com logs
+}
