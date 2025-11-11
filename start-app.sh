@@ -1,28 +1,20 @@
-#!/bin/sh
+# -------- BACKEND (Node + Prisma) --------
+FROM node:18-bullseye-slim
 
-# Caminho absoluto para o binário do Prisma (garante que seja encontrado)
-PRISMA_BIN="./node_modules/.bin/prisma"
+WORKDIR /app
 
-# 1. Espera pelo Banco de Dados estar pronto para conexões Prisma
-# Isso é crucial para ambientes orquestrados onde o healthcheck pode ser otimista.
-echo "Aguardando o Banco de Dados (DB) antes da migração..."
-sleep 5 # Dá um tempo extra para o PostgreSQL estar pronto para conexões de alto nível.
+RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
-# 2. Força a sincronização do schema com o banco (cria colunas que faltam)
-# O `db push` é usado para garantir que o banco reflita o schema.prisma.
-echo "Forçando Sincronização do Schema (db push)..."
-$PRISMA_BIN db push --accept-data-loss || { 
-  echo "ERRO CRÍTICO: db push falhou. Verifique DATABASE_URL e logs do DB."
-  exit 1
-}
+COPY package*.json ./
+RUN npm install --omit=dev
 
-# 3. Executa o seed do banco (popula dados iniciais, como admin)
-echo "Executando o Seed..."
-$PRISMA_BIN db seed || { 
-  echo "Aviso: db seed falhou (pode ser esperado se o seed já rodou)."
-  # Não vamos falhar aqui, mas é bom logar.
-}
+COPY prisma ./prisma
+RUN npx prisma generate
 
-# 4. Inicia o servidor Node.js
-echo "Iniciando o Servidor Node.js..."
-exec node server.js
+COPY . .
+
+RUN chmod +x ./start-app.sh
+
+ENV NODE_ENV=production
+
+CMD ["./start-app.sh"]
