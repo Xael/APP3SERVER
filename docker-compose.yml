@@ -4,7 +4,7 @@ services:
   # Serviço do Banco de Dados PostgreSQL
   db:
     image: postgres:13-alpine
-    container_name: crb_postgres_db
+    container_name: app3_app3banco
     restart: unless-stopped
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
@@ -22,7 +22,7 @@ services:
 
   # Serviço do Backend (API Node.js)
   server:
-    container_name: crb_api_server
+    container_name: app3_api_app3server
     build:
       context: ./server
       dockerfile: Dockerfile
@@ -39,7 +39,7 @@ services:
 
   # Serviço do Frontend (React + Nginx)
   frontend:
-    container_name: crb_frontend_app
+    container_name: app3_frontend_app3main
     build:
       context: .
       dockerfile: Dockerfile
@@ -48,3 +48,4 @@ services:
       - server
     ports:
       - "80:80"
+
