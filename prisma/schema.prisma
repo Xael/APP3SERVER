@@ -26,7 +26,7 @@ model Service {
   id        Int               @id @default(autoincrement())
   name      String            @unique
   unitId    Int
-  unit      Unit              @relation(fields: [unitId], references: [id], onDelete: Restrict) // Evita excluir unidade em uso
+  unit      Unit              @relation(fields: [unitId], references: [id], onDelete: Restrict)
   locations LocationService[]
   goals     Goal[]
 }
@@ -41,9 +41,8 @@ model Location {
   lat          Float?
   lng          Float?
   observations String?
-  isGroup      Boolean?  @default(false) // Distingue se é um agrupador (Bairro)
+  isGroup      Boolean?  @default(false)
 
-  // Relacionamento Pai-Filho (Bairro -> Rua)
   parentId Int?
   parent   Location?   @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children Location[]  @relation("LocationHierarchy")
@@ -80,6 +79,8 @@ model User {
   resetToken        String?
   resetTokenExpires DateTime?
   auditLogs         AuditLog[]
+  
+  location OperatorLocation? // Relação para a localização do operador
 }
 
 // ============================================================
@@ -87,24 +88,23 @@ model User {
 // ============================================================
 model Record {
   id                  Int       @id @default(autoincrement())
-  operatorId          Int?      // Alterado para opcional para não perder histórico
+  operatorId          Int?
   serviceId           Int
   serviceType         String
   serviceUnit         String
-  locationId          Int?      // Alterado para opcional para não perder histórico
+  locationId          Int?
   locationName        String
   contractGroup       String
   locationArea        Float?
-  overrideMeasurement Float?    // Medição ajustada pelo Admin
+  overrideMeasurement Float?
   gpsUsed             Boolean
   startTime           DateTime
   endTime             DateTime?
   beforePhotos        String[]
   afterPhotos         String[]
   operatorName        String
-  serviceOrderNumber  String?   // Novo campo para Ordem de Serviço
+  serviceOrderNumber  String?
 
-  // onDelete: SetNull preserva o histórico se um operador ou local for excluído
   operator User?     @relation(fields: [operatorId], references: [id], onDelete: SetNull)
   location Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
 }
@@ -118,7 +118,7 @@ model Goal {
   month         String
   targetArea    Float
   serviceId     Int
-  service       Service @relation(fields: [serviceId], references: [id], onDelete: Cascade) // Se o serviço for deletado, a meta também é
+  service       Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 }
 
 // ============================================================
@@ -139,8 +139,32 @@ model AuditLog {
   adminId       Int
   adminUsername String
   action        String
-  recordId      Int?     // Alterado para opcional
+  recordId      Int?
   details       String
 
-  admin User @relation(fields: [adminId], references: [id], onDelete: Restrict) // Evita excluir admin com logs
+  admin User @relation(fields: [adminId], references: [id], onDelete: Restrict)
+}
+
+// ============================================================
+// NOVOS MODELOS PARA MAPAS E CONFIGURAÇÕES
+// ============================================================
+
+// Armazena as configurações globais da aplicação (white-labeling, etc)
+model AppSettings {
+  id             Int      @id @default(1)
+  companyName    String?  @default("CRB SERVIÇOS")
+  companyLogoUrl String?  @default("/assets/Logo.png")
+  mapsEnabled    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// Armazena a última localização conhecida de um operador
+model OperatorLocation {
+  userId        Int      @id
+  latitude      Float
+  longitude     Float
+  lastUpdatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
