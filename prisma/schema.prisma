@@ -152,8 +152,8 @@ model AuditLog {
 // Armazena as configurações globais da aplicação (white-labeling, etc)
 model AppSettings {
   id             Int      @id @default(1)
-  companyName    String?  @default("CRB SERVIÇOS")
-  companyLogoUrl String?  @default("/assets/Logo.png")
+  companyName    String?  @default("PRESTAÇÃO DE SERVIÇOS")
+  companyLogoUrl String?  @default("/assets/logo.png")
   mapsEnabled    Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -168,3 +168,4 @@ model OperatorLocation {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
