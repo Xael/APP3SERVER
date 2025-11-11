@@ -1,20 +1,20 @@
-# -------- BACKEND (Node + Prisma) --------
-FROM node:18-bullseye-slim
+#!/bin/sh
 
-WORKDIR /app
+PRISMA_BIN="./node_modules/.bin/prisma"
 
-RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+echo "Aguardando o Banco de Dados (DB) antes da migração..."
+sleep 5
 
-COPY package*.json ./
-RUN npm install --omit=dev
+echo "Forçando Sincronização do Schema (db push)..."
+$PRISMA_BIN db push --accept-data-loss || { 
+  echo "ERRO CRÍTICO: db push falhou. Verifique DATABASE_URL e logs do DB."
+  exit 1
+}
 
-COPY prisma ./prisma
-RUN npx prisma generate
+echo "Executando o Seed..."
+$PRISMA_BIN db seed || { 
+  echo "Aviso: db seed falhou (pode ser esperado se o seed já rodou)."
+}
 
-COPY . .
-
-RUN chmod +x ./start-app.sh
-
-ENV NODE_ENV=production
-
-CMD ["./start-app.sh"]
+echo "Iniciando o Servidor Node.js..."
+exec node server.js
