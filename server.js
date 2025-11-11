@@ -1,11 +1,10 @@
 require('dotenv').config();
-const contractConfigRoutes = require('./routes/contractConfig.js');
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 
-const contractGroupsRouter = require('./routes/contractConfig');
+const contractConfigRoutes = require('./routes/contractConfig.js');
 const authRoutes = require('./routes/auth');
 const recordRoutes = require('./routes/records');
 const locationRoutes = require('./routes/locations');
@@ -15,6 +14,8 @@ const unitRoutes = require('./routes/units');
 const goalRoutes = require('./routes/goals');
 const auditLogRoutes = require('./routes/auditLog');
 const reportRoutes = require('./routes/reports.js');
+const settingsRoutes = require('./routes/settings.js'); // Novo
+const mapRoutes = require('./routes/map.js'); // Novo
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -36,7 +37,7 @@ app.get('/api', (req, res) => {
   res.json({ message: 'CRB Serviços API is running!' });
 });
 
-app.use('/api/contract-groups', contractGroupsRouter);
+app.use('/api/contract-groups', contractConfigRoutes);
 app.use('/api/contract-configs', contractConfigRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/records', recordRoutes);
@@ -47,6 +48,8 @@ app.use('/api/units', unitRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/auditlog', auditLogRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/settings', settingsRoutes); // Novo
+app.use('/api/map', mapRoutes); // Novo
 
 // Start Server
 app.listen(PORT, () => {
