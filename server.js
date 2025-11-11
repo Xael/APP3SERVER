@@ -34,7 +34,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // API Routes
 app.get('/api', (req, res) => {
-  res.json({ message: 'CRB Serviços API is running!' });
+  res.json({ message: 'Prestação de Serviços API is rodando!' });
 });
 
 app.use('/api/contract-groups', contractConfigRoutes);
@@ -53,5 +53,5 @@ app.use('/api/map', mapRoutes); // Novo
 
 // Start Server
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server esta rodando no http://localhost:${PORT}`);
 });
